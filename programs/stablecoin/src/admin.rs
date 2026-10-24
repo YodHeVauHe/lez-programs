@@ -60,7 +60,9 @@ pub fn set_stability_fee_per_millisecond(
     // never panics: this instruction is the only way to replace a bad rate, so a
     // poisoned accumulator must not block it (issue #427).
     let accumulator_data = crate::accrue_stability_fee::advance_fee_accumulator_saturating(
-        &parameters, &accumulator, now,
+        &parameters,
+        &accumulator,
+        now,
     );
 
     parameters.stability_fee_per_millisecond = new_rate;
@@ -318,8 +320,8 @@ pub fn set_market_price_oracle(
 mod tests {
     use lee_core::account::{Account, AccountId};
     use stablecoin_core::math::{
-        compute_current_accumulated_rate, FIXED_POINT_ONE, MAX_STABILITY_FEE_PER_MILLISECOND,
-        MAXIMUM_COMPOUNDING_WINDOW_MILLISECONDS,
+        compute_current_accumulated_rate, FIXED_POINT_ONE, MAXIMUM_COMPOUNDING_WINDOW_MILLISECONDS,
+        MAX_STABILITY_FEE_PER_MILLISECOND,
     };
 
     use super::*;

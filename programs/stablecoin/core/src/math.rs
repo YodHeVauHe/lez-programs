@@ -286,13 +286,15 @@ pub fn compute_current_accumulated_rate_saturating(
     last_accrued_at: u64,
     now: u64,
 ) -> u128 {
-    u128::try_from(compute_current_accumulated_rate_wide(
-        accumulated_rate_at_last_accrual,
-        stability_fee_per_millisecond,
-        last_accrued_at,
-        now,
+    u128::try_from(
+        compute_current_accumulated_rate_wide(
+            accumulated_rate_at_last_accrual,
+            stability_fee_per_millisecond,
+            last_accrued_at,
+            now,
+        )
+        .min(U512::from(u128::MAX)),
     )
-    .min(U512::from(u128::MAX)))
     .expect("capped at u128::MAX")
 }
 
@@ -681,8 +683,7 @@ mod tests {
     fn yearly_ceiling_doubles_at_most_yearly() {
         // 1 + 2.2×10⁻¹¹ per ms over a 365-day year compounds to ≈ ×2.0015.
         assert!(
-            compound_rate(MAX_STABILITY_FEE_PER_MILLISECOND, 31_536_000_000)
-                <= FIXED_POINT_ONE * 3
+            compound_rate(MAX_STABILITY_FEE_PER_MILLISECOND, 31_536_000_000) <= FIXED_POINT_ONE * 3
         );
     }
 
