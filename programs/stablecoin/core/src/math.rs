@@ -257,8 +257,9 @@ fn project_forward_wide(
 }
 
 /// [`compute_current_accumulated_rate`] widened to `U512`, for the read-side
-/// §6.2 check. A stability fee at its permitted upper bound overflows the
-/// `u128` projection well inside the compounding window.
+/// §6.2 check. With the fee bounded by [`MAX_STABILITY_FEE_PER_MILLISECOND`]
+/// the `u128` projection holds for decades; only an already-poisoned anchor
+/// (pre-fix state) can push it past `u128` inside the compounding window.
 #[must_use]
 pub fn compute_current_accumulated_rate_wide(
     accumulated_rate_at_last_accrual: u128,

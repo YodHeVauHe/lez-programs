@@ -314,7 +314,9 @@ pub fn set_market_price_oracle(
 )]
 mod tests {
     use lee_core::account::{Account, AccountId};
-    use stablecoin_core::math::{compute_current_accumulated_rate, FIXED_POINT_ONE};
+    use stablecoin_core::math::{
+        compute_current_accumulated_rate, FIXED_POINT_ONE, MAX_STABILITY_FEE_PER_MILLISECOND,
+    };
 
     use super::*;
     use crate::{
@@ -452,7 +454,7 @@ mod tests {
 
     #[test]
     fn accepts_both_band_endpoints() {
-        for rate in [FIXED_POINT_ONE, FIXED_POINT_ONE * 2] {
+        for rate in [FIXED_POINT_ONE, MAX_STABILITY_FEE_PER_MILLISECOND] {
             let (post_states, _) = set_rate(
                 admin_account(),
                 parameters_at(OLD_RATE),
@@ -484,7 +486,7 @@ mod tests {
             parameters_at(OLD_RATE),
             accumulator_account(ACCUMULATOR_ANCHOR, T0),
             NOW,
-            FIXED_POINT_ONE * 2 + 1,
+            MAX_STABILITY_FEE_PER_MILLISECOND + 1,
         );
     }
 
