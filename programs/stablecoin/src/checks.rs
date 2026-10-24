@@ -110,7 +110,7 @@ pub(crate) fn assert_admin_authorized(
     );
 }
 
-/// Spec §8: `FIXED_POINT_ONE <= rate <= 2 x FIXED_POINT_ONE`.
+/// Spec §8: `FIXED_POINT_ONE <= rate <= MAX_STABILITY_FEE_PER_MILLISECOND`.
 ///
 /// The lower bound keeps the fee from decaying debt; the upper bound is the
 /// yearly-derived ceiling from `stablecoin_core::math` (≈ +100%/yr compounded,

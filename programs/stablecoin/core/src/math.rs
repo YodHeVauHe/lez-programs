@@ -25,8 +25,8 @@ pub const MAXIMUM_COMPOUNDING_WINDOW_MILLISECONDS: u64 = 604_800_000;
 /// Per-millisecond factor `1 + 2.2×10⁻¹¹`, i.e. `FIXED_POINT_ONE +
 /// 22×10¹⁵`: compounding a full 365-day year grows ≈ ×2.0015 (~+100%/yr).
 /// At this ceiling a full [`MAXIMUM_COMPOUNDING_WINDOW_MILLISECONDS`]
-/// window compounds only ≈ ×1.0134 — orders of magnitude below the
-/// ~`1 + 10⁻⁷`/ms rate at which a single window overflows — and the anchor
+/// window compounds only ≈ ×1.0134 — far below the ~`1 + 4×10⁻⁸`/ms
+/// rate at which a single window overflows — and the anchor
 /// doubles at most yearly, so the raw `u128` accumulator (RAY-scaled) keeps
 /// ≈38 years of headroom even with the fee pinned at the ceiling. The
 /// pre-fix bound (`FIXED_POINT_ONE * 2`) overflowed in tens of milliseconds
