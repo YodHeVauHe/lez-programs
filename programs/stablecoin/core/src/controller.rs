@@ -11,11 +11,16 @@ use alloy_primitives::I256;
 use crate::math::FIXED_POINT_ONE;
 
 /// Anti-windup clamp on the integral term, per spec §8:
-/// `± FIXED_POINT_ONE × 10^6`.
+/// `± FIXED_POINT_ONE / 100_000` — the same magnitude as
+/// [`RATE_DELTA_CLAMP`], by reference.
 ///
-/// This is a HARD clamp — v1's deliberate divergence from RAI's leaky
-/// integrator. Placeholder pending the §15 simulation tuning pass.
-pub const INTEGRAL_CLAMP: i128 = (FIXED_POINT_ONE as i128) * 1_000_000;
+/// The pre-fix value (`± FIXED_POINT_ONE × 10^6`) was 10¹¹× the output clamp,
+/// so a wound-up integral could pin the rate at its clamp essentially forever
+/// (issue #428). Tying the two keeps a saturated integral's hold on the rate
+/// bounded to the output clamp's own scale; with realistic `Ki` values
+/// (§8: ≈10³–10⁹ raw) the clamp is never reached in tuning and acts purely as
+/// an anti-catastrophe bound.
+pub const INTEGRAL_CLAMP: i128 = RATE_DELTA_CLAMP;
 
 /// Per-update rate-adjustment clamp (rate-explosion guard), per spec §8:
 /// `± FIXED_POINT_ONE / 100_000` — about ±0.001% per call, so even a
@@ -140,15 +145,37 @@ fn clamp_to_magnitude(value: I256, magnitude: i128) -> i128 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::math::MAX_INTEGRAL_GAIN;
 
     #[test]
     fn integral_clamp_matches_spec_section_eight() {
-        assert_eq!(INTEGRAL_CLAMP, (FIXED_POINT_ONE as i128) * 1_000_000);
+        assert_eq!(INTEGRAL_CLAMP, RATE_DELTA_CLAMP);
     }
 
     #[test]
     fn rate_delta_clamp_matches_spec_section_eight() {
         assert_eq!(RATE_DELTA_CLAMP, (FIXED_POINT_ONE / 100_000) as i128);
+    }
+
+    /// A wound-up integral pins at ±INTEGRAL_CLAMP and holds the rate at the
+    /// output clamp — never past it (issue #428).
+    #[test]
+    fn wound_up_integral_saturates_and_rate_stays_clamped() {
+        for tick in 0..2 {
+            let output = run_controller_tick(
+                FIXED_POINT_ONE * 2, // redemption far above market:
+                FIXED_POINT_ONE / 2, // large sustained positive error
+                if tick == 0 { 0 } else { INTEGRAL_CLAMP },
+                0, // Kp = 0: without the clamp tie this rate would never move
+                MAX_INTEGRAL_GAIN as i128,
+                1_000,
+            );
+            assert_eq!(output.controller_integral_term, INTEGRAL_CLAMP);
+            assert_eq!(
+                output.redemption_rate_per_millisecond,
+                FIXED_POINT_ONE + RATE_DELTA_CLAMP as u128
+            );
+        }
     }
 
     #[test]

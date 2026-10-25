@@ -2225,7 +2225,7 @@ fn stablecoin_admin_retunes_parameters_then_rotates_the_role() {
         vec![Ids::admin(), params_pda],
         vec![admin],
         stablecoin_core::Instruction::SetControllerGains {
-            new_proportional_gain: -7,
+            new_proportional_gain: 7,
             new_integral_gain: 11,
         },
         "set_controller_gains",
