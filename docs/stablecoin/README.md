@@ -1534,8 +1534,9 @@ admin-fed observation and swaps it for a real producer once the asset exists:
 
 The sequence is exercised end to end by the integration test
 `stablecoin_launch_sequence_bootstraps_through_the_oracle_deadlock`
-(`programs/integration_tests/tests/stablecoin.rs`), which is also the only test
-coverage of the `set_market_price_oracle` rotation.
+(`programs/integration_tests/tests/stablecoin.rs`) — the only *integration*
+(through-the-guest) coverage of the `set_market_price_oracle` rotation, whose
+host-side unit tests live in `programs/stablecoin/src/admin.rs`.
 
 *Alternative considered:* protocol-level support (an admin-seeded launch price
 or a bootstrap phase inside `initialize_program`) would remove the manual

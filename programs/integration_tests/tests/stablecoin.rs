@@ -1795,7 +1795,13 @@ fn submit_poke(
 /// fresh oracle observation, and a market-acquired stablecoin buffer (credited
 /// to `total_supply` so the books stay consistent).
 fn bootstrapped_owner_state(start: u64) -> V03State {
-    let mut state = initialize_protocol(start, 0);
+    bootstrapped_owner_state_with_gain(start, 0)
+}
+
+/// [`bootstrapped_owner_state`] with a live proportional gain, for tests that
+/// exercise the controller's feedback (a zero gain pins the rate at 1.0).
+fn bootstrapped_owner_state_with_gain(start: u64, proportional_gain: i128) -> V03State {
+    let mut state = initialize_protocol(start, proportional_gain);
     state.force_insert_account(
         Ids::freeze_authority(),
         Account {
@@ -2108,16 +2114,23 @@ fn stablecoin_launch_sequence_bootstraps_through_the_oracle_deadlock() {
     use stablecoin_core::math::FIXED_POINT_ONE;
 
     let start: u64 = 1_700_000_000_000;
-    let mut state = bootstrapped_owner_state(start);
+    // A live proportional gain: the rotation proof ends with a controller poke,
+    // and a zero gain would pin the rate at exactly 1.0 regardless of error.
+    let mut state = bootstrapped_owner_state_with_gain(
+        start,
+        i128::try_from(FIXED_POINT_ONE).expect("FIXED_POINT_ONE fits i128"),
+    );
     let mut block = 1u64;
 
     let params_pda = compute_protocol_parameters_pda(Ids::stablecoin_program());
     let accumulator_pda = compute_stability_fee_accumulator_pda(Ids::stablecoin_program());
     let redemption_pda = compute_redemption_price_state_pda(Ids::stablecoin_program());
 
-    // Phase 0–1: the pre-initialized `Ids::oracle()` account is the launch
-    // oracle — an admin-fed `OraclePriceAccount` (owner [9u8; 32], not a TWAP
-    // PDA) that exists before the asset does. Initialize binds it.
+    // Phase 0–1: the `Ids::oracle()` account is the launch oracle — an
+    // admin-fed `OraclePriceAccount` (owner [9u8; 32], not a TWAP PDA) that
+    // exists before the asset does: `oracle_init` at price 0.5 for
+    // `initialize_program` to bind, re-inserted with a fresh observation at
+    // timestamp `start` before any position opens. Initialize binds it.
     assert_eq!(
         read_parameters(&state).market_price_oracle_id,
         Ids::oracle(),
@@ -2195,7 +2208,10 @@ fn stablecoin_launch_sequence_bootstraps_through_the_oracle_deadlock() {
             data: Data::from(&twap_oracle_core::OraclePriceAccount {
                 base_asset: Ids::stablecoin_definition_pda(),
                 quote_asset: Ids::collateral_definition(),
-                price: FIXED_POINT_ONE / 2,
+                // Priced below the 0.5 redemption anchor so the controller's
+                // error is positive and the post-rotation rate assertion is
+                // meaningful (a 0.5 oracle would make the error exactly zero).
+                price: FIXED_POINT_ONE / 4,
                 timestamp: rotation_time,
                 source_id: twap_oracle_id,
                 confidence_interval: 0,
@@ -2226,14 +2242,25 @@ fn stablecoin_launch_sequence_bootstraps_through_the_oracle_deadlock() {
         rotation_time,
         block,
         stablecoin_core::Instruction::UpdateRedemptionRate,
-        vec![params_pda, redemption_pda, twap_oracle_id, CLOCK_01_PROGRAM_ACCOUNT_ID],
+        vec![
+            params_pda,
+            redemption_pda,
+            twap_oracle_id,
+            CLOCK_01_PROGRAM_ACCOUNT_ID,
+        ],
     )
     .expect("update_redemption_rate must consume the rotated oracle");
     let after = read_redemption_price_state(&state);
     assert_eq!(after.last_updated_at, rotation_time);
-    // Positive error (redemption 1.0 above market 0.5) drives the rate up,
-    // capped by RATE_DELTA_CLAMP — the same negative-feedback contract as §6.4.
-    assert!(after.redemption_rate_per_millisecond > FIXED_POINT_ONE);
+    // Positive error (redemption anchor 0.5 above market 0.25) with the live
+    // Kp = 1.0 drives the rate up, capped per update by RATE_DELTA_CLAMP —
+    // the same negative-feedback contract as §6.4.
+    assert_eq!(
+        after.redemption_rate_per_millisecond,
+        FIXED_POINT_ONE
+            + u128::try_from(stablecoin_core::RATE_DELTA_CLAMP)
+                .expect("RATE_DELTA_CLAMP is positive"),
+    );
 }
 
 fn submit(
