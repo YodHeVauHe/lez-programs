@@ -286,9 +286,9 @@ mod tests {
 
     #[test]
     fn rate_clamp_caps_per_tick_change_even_with_huge_gains() {
-        // The maximum proportional gain spec §8 allows (|Kp| ≤ FIXED_POINT_ONE × 10^3)
-        // against a huge price error. The per-update adjustment must still be
-        // capped at RATE_DELTA_CLAMP.
+        // A beyond-legal stress value (1000× the §8 cap) against a huge price
+        // error. The per-update adjustment must still be capped at
+        // RATE_DELTA_CLAMP.
         let proportional_gain = (FIXED_POINT_ONE as i128) * 1_000;
         let output = run_controller_tick(
             FIXED_POINT_ONE * 2, // redemption = 2.0
@@ -329,8 +329,8 @@ mod tests {
 
     #[test]
     fn extreme_inputs_do_not_overflow() {
-        // Worst case the §8 bounds and the §5.3 elapsed-window clamp permit:
-        // max gains, an enormous price error, and a full compounding window.
+        // Beyond-legal stress values (gains 1000× the §8 caps), an enormous
+        // price error, and a full §5.3 elapsed window.
         let output = run_controller_tick(
             u128::MAX / 2,
             0,

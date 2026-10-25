@@ -1457,7 +1457,7 @@ One `update_redemption_rate` computing a new rate from the price gap (§6.4), th
 4. Terms:
    - `P = Kp × error = 0.4 × 0.02 = 0.008`
    - `integral_delta = Ki × error × Δt = 0.0001 × 0.02 × 1000 = 0.002`
-   - `new_integral = 0 + 0.002 = 0.002` (within `INTEGRAL_CLAMP`)
+   - `new_integral = 0 + 0.002 = 0.002` (illustrative only — these exaggerated constants sit above the v1 §8 clamps)
    - `rate_adjustment = P + new_integral = 0.008 + 0.002 = 0.010`
 5. New rate: `redemption_rate_per_millisecond = 1.0 + 0.010 = 1.01`.
 6. Persist (the anchor, rate, and memory all change here, and only here):

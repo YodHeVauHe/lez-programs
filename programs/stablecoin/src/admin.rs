@@ -153,7 +153,7 @@ pub fn set_minimum_collateralization_ratio(
 ///
 /// # Panics
 /// - `admin` did not sign, or is not `ProtocolParameters.admin_account_id`.
-/// - Either gain magnitude is outside its §8 band.
+/// - Either gain is negative or its magnitude is outside its §8 band.
 /// - `protocol_parameters` is invalid.
 pub fn set_controller_gains(
     admin: AccountWithMetadata,

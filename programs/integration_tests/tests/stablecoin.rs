@@ -2244,7 +2244,7 @@ fn stablecoin_admin_retunes_parameters_then_rotates_the_role() {
     );
     let after_tuning = read_parameters(&state);
     assert_eq!(after_tuning.minimum_collateralization_ratio, new_ratio);
-    assert_eq!(after_tuning.controller_proportional_gain, -7);
+    assert_eq!(after_tuning.controller_proportional_gain, 7);
     assert_eq!(after_tuning.controller_integral_gain, 11);
     assert_eq!(
         after_tuning.minimum_milliseconds_between_rate_updates,
